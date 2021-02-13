@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
@@ -16,4 +18,27 @@ exports.userDeleted = functions.auth.user().onDelete((user) => {
   // for backround triggers you must return a value/promise
   const doc = admin.firestore().collection('users').doc(user.uid);
   return doc.delete();
+});
+
+// http callable function (adding a request)
+exports.addRequest = functions.https.onCall((data, context) => {
+  // if the user is not logged in
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'only authenticated users can add requests'
+    );
+  }
+  // if the text longer than 30 characters
+  if (data.text.length > 30) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'request must be no more than 30 characters long'
+    );
+  }
+
+  return admin.firestore().collection('requests').add({
+    text: data.text,
+    upvotes: 0,
+  });
 });
